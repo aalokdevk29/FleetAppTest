@@ -1,0 +1,6 @@
+django
+djangorestframework
+django-filter # Filtering support
+markdown # Markdown support for the browsable API.
+psycopg2 # Postgres connectivity
+python-decouple # Environment management
