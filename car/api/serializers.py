@@ -28,9 +28,42 @@ class BaseCarSerializer(serializers.ModelSerializer):
             "manufacturer",
             "model",
             "category",
-            "powertrain",
-            "max_passenger",
-            "manufacturing_year",
+            "engine",
+            "seating_capacity",
+            "year",
+            "registration",
+            "created",
+            "updated",
+        ]
+        read_only_fields = [
+            "id",
+            "created",
+            "updated",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        """
+        Overriden init to handle the explicit field choice.
+        """
+        remove_fields = kwargs.pop("remove_fields", None)
+        super(BaseCarSerializer, self).__init__(*args, **kwargs)
+
+        if remove_fields:
+            # For multiple fields in a list
+            [self.fields.pop(field_name) for field_name in remove_fields]
+
+
+class CarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Car
+        fields = [
+            "id",
+            "manufacturer",
+            "model",
+            "category",
+            "engine",
+            "seating_capacity",
+            "year",
             "registration",
             "created",
             "updated",
@@ -42,7 +75,8 @@ class BaseCarSerializer(serializers.ModelSerializer):
         ]
 
 
-class CarSerializer(serializers.ModelSerializer):
+class CarUpdateSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
 
     class Meta:
         model = Car
@@ -51,15 +85,18 @@ class CarSerializer(serializers.ModelSerializer):
             "manufacturer",
             "model",
             "category",
-            "powertrain",
-            "max_passenger",
-            "manufacturing_year",
+            "engine",
+            "seating_capacity",
+            "year",
             "registration",
             "created",
             "updated",
         ]
         read_only_fields = [
-            "id",
             "created",
             "updated",
         ]
+
+
+class CarDeleteSerializer(serializers.Serializer):
+    id = serializers.IntegerField()

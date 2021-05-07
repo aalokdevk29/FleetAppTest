@@ -6,12 +6,21 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 
 from car.models import Car
-from car.api.serializers import BaseCarSerializer, CarSerializer
+from car.api.serializers import (
+    BaseCarSerializer,
+    CarSerializer,
+    CarUpdateSerializer,
+    CarDeleteSerializer,
+)
 
 
 class CarList(generics.ListAPIView):
     """
     GET: List all cars.
+
+    ** Optional query parameters:-
+        i) name = category, value = True
+        ii) name = engine, value = True
     """
 
     queryset = Car.objects.all().order_by("id")
@@ -19,6 +28,25 @@ class CarList(generics.ListAPIView):
     permission_classes = [
         permissions.AllowAny,
     ]
+
+    def list(self, request):
+        remove_fields = ["category", "engine"]
+
+        category = self.request.query_params.get("category")
+        engine = self.request.query_params.get("engine")
+
+        if category:
+            remove_fields.remove("category")
+
+        if engine:
+            remove_fields.remove("engine")
+
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(
+            queryset, many=True, remove_fields=remove_fields
+        )
+
+        return Response(serializer.data)
 
 
 class CarCreate(generics.CreateAPIView):
@@ -37,7 +65,10 @@ class CarDetail(APIView):
     """
     GET: Retrieve a car instance.
 
-    * Requires ``id`` of the instance as query parameter.
+    * Requires `id` of the instance as query parameter.
+    ** Optional query parameters:-
+        i) name = category, value = True
+        ii) name = engine, value = True
     """
 
     serializer_class = BaseCarSerializer
@@ -53,24 +84,34 @@ class CarDetail(APIView):
 
     def get(self, request):
         pk = self.request.query_params.get("id")
+        category = self.request.query_params.get("category")
+        engine = self.request.query_params.get("engine")
 
         if not pk:
             error = "Please provide a valid `id` query parameter in the URL!"
             raise ValidationError(error)
 
+        remove_fields = ["category", "engine"]
+
+        if category:
+            remove_fields.remove("category")
+
+        if engine:
+            remove_fields.remove("engine")
+
         car = self.get_object(pk)
-        serializer = self.serializer_class(car)
+        serializer = self.serializer_class(car, remove_fields=remove_fields)
         return Response(serializer.data)
 
 
 class CarUpdate(APIView):
     """
-    PUT: Update a car instance.
+    POST: Update a car instance.
 
-    * Requires ``id`` of the instance as query parameter.
+    * Requires `id` of the instance in POST data.
     """
 
-    serializer_class = CarSerializer
+    serializer_class = CarUpdateSerializer
     permission_classes = [
         permissions.AllowAny,
     ]
@@ -81,31 +122,26 @@ class CarUpdate(APIView):
         except Car.DoesNotExist:
             raise Http404
 
-    def put(self, request):
-        pk = self.request.query_params.get("id")
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not pk:
-            error = "Please provide a valid `id` query parameter in the URL!"
-            raise ValidationError(error)
+        instance = self.get_object(serializer.validated_data["id"])
+        serializer = CarSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        car = self.get_object(pk)
-        serializer = self.serializer_class(car, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
-        else:
-            raise ValidationError(serializer.errors)
+        return Response(serializer.data)
 
 
 class CarDelete(APIView):
     """
-    DELETE: Delete a car instance.
+    POST: Delete a car instance.
 
-    * Requires ``id`` of the instance as query parameter.
+    * Requires `id` of the instance in POST data.
     """
 
+    serializer_class = CarDeleteSerializer
     permission_classes = [
         permissions.AllowAny,
     ]
@@ -116,13 +152,12 @@ class CarDelete(APIView):
         except Car.DoesNotExist:
             raise Http404
 
-    def delete(self, request):
-        pk = self.request.query_params.get("id")
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not pk:
-            error = "Please provide a valid `id` query parameter in the URL!"
-            raise ValidationError(error)
+        # Retrieve and delete instance
+        instance = self.get_object(serializer.validated_data.get("id"))
+        instance.delete()
 
-        car = self.get_object(pk)
-        car.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

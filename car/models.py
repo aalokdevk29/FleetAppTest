@@ -4,7 +4,7 @@ from django.db.models.base import Model
 from core.models import NamedModel, TimestampedModel, DescriptionModel
 
 
-TYPE_CHOICES = [
+ENGINE_TYPE_CHOICES = [
     ("Internal Combustion", "Internal Combustion"),
     ("Hybrid", "Hybrid"),
     ("Electric", "Electric"),
@@ -59,16 +59,16 @@ class Car(TimestampedModel):
         null=True,
         blank=True,
     )
-    powertrain = models.CharField(
+    engine = models.CharField(
         verbose_name="Type",
         max_length=256,
-        choices=TYPE_CHOICES,
+        choices=ENGINE_TYPE_CHOICES,
         default="Internal Combustion",
     )
-    max_passenger = models.PositiveIntegerField(
+    seating_capacity = models.PositiveIntegerField(
         verbose_name="Maximum number of passengers",
     )
-    manufacturing_year = models.CharField(
+    year = models.CharField(
         verbose_name="Year of manufacture",
         max_length=256,
     )
